@@ -670,28 +670,28 @@ public abstract class Solitaire extends Applet
          // nAccept of 0 means move is not allowed 
             else if(nAccept == 0)
             {   
-            	if(clicked != selected)
+            	if (clicked != selected)
             	{
             		int srcStack = -1;
-                	int destStack = -1;
+            		int destStack = -1;
                 	
-                	for (int j = 0; i < stacks.length; j++)
-                	{
-                		if (clicked.equals(stacks[j]))
-                		{
-                			srcStack = j;
-                		}
-                		else if (selected.equals(stacks[j]))
-                		{
-                			destStack = j;
-                		}
-                	}
-                    showMsg("Invalid move");
-                    long currTime = System.currentTimeMillis();
-                	long delay = currTime - time;
-                	time = currTime;
-                	logMessage("Location Clicked," + x + "," + y + "," + delay);
-                    logMessage("Invalid move," + srcStack + "," + destStack + "," + delay);
+            		for (int j = 0; j < stacks.length; j++)
+            		{
+            			if (clicked.equals(stacks[j]))
+            			{
+            				srcStack = j;
+            			}
+            			else if (selected.equals(stacks[j]))
+            			{
+            				destStack = j;
+            			}
+            		}
+            		showMsg("Invalid move");
+            		long currTime = System.currentTimeMillis();
+            		long delay = currTime - time;
+            		time = currTime;
+            		logMessage("Location Clicked," + x + "," + y + "," + delay);
+            		logMessage("Invalid Move," + srcStack + "," + destStack + "," + delay);
             	}
             }
             else

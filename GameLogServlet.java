@@ -23,7 +23,7 @@ public class GameLogServlet extends HttpServlet
             int index = inString.indexOf("=");
             if (index == -1) {
                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                resp.getWriter().print(message);
+                resp.getWriter().print(message + " did not have right index");
                 resp.getWriter().close();
                 return;
             }
@@ -35,10 +35,6 @@ public class GameLogServlet extends HttpServlet
 			// Separate out file and what to write to the file
 			String[] fileAndContents = decodedString.split(";");
 			 
-            // set the response code and write the response data
-            resp.setStatus(HttpServletResponse.SC_OK);
-            OutputStreamWriter writer = new OutputStreamWriter(resp.getOutputStream());
-            
 			// Now, let's try to write this to a file
 			File file = new File("cyberlearning_logs" + File.separator + fileAndContents[0]);
             boolean isCreated = file.createNewFile() || file.exists();
@@ -50,7 +46,10 @@ public class GameLogServlet extends HttpServlet
             FileOutputStream fout = new FileOutputStream(file, true);
             fout.write(fileAndContents[1].getBytes());
             fout.close();
-					
+			
+// set the response code and write the response data
+            resp.setStatus(HttpServletResponse.SC_OK);
+            OutputStreamWriter writer = new OutputStreamWriter(resp.getOutputStream());			
             writer.write("ok");
             writer.flush();
             writer.close();
