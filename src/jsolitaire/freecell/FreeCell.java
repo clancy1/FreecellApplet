@@ -5,6 +5,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -35,22 +37,7 @@ public class FreeCell extends Solitaire
  *  <TR><TD> 16-19 <TD> FreeCellBuild <TD> 6 </TABLE> */
     public void gameInit()
     {
-    	// Create log file 
-    	while (logFile.equals(""))
-    	{
-    		String playerName = JOptionPane.showInputDialog("Please input player name, without {}<>;().");
-    		// Remove common programming characters for sanitization
-    		playerName = playerName.replace(";", "");
-    		playerName = playerName.replace("<", "");
-    		playerName = playerName.replace(">", "");
-    		playerName = playerName.replace("(", "");
-    		playerName = playerName.replace(")", "");
-    		playerName = playerName.replace("{", "");
-    		playerName = playerName.replace("}", "");
-    		if (!playerName.equals(""))
-    			logFile = playerName + "_" + System.currentTimeMillis() + "_" + "freecell.txt";
-    	}
-    	
+    	gameType = "freecell";    	
     	
     	stacks  = new CardStack[MAX_FREE_CELLS + 12];
     	helpFile = "freecell-help.html";

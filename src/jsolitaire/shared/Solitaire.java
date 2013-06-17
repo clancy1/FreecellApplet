@@ -7,6 +7,8 @@ import java.net.*;
 import java.io.*;
 import java.util.Random;
 
+import javax.swing.JOptionPane;
+
 /** This is the abstract base class for all solitaire games. <BR> 
  * The following methods must be overriden: gameInit, LayoutScreen <BR> 
  * The following methods must be overriden if the game has options:
@@ -23,9 +25,15 @@ import java.util.Random;
 public abstract class Solitaire extends Applet
 {
 	// Path of the game logging servlet
-	protected String servletPath = "http://localhost:8080/GameLogServlet";
+	protected String servletPath = "http://localhost:8080/cyberlearning/GameLogServlet";
 	protected String logFile = "";
+	protected String machineId = "";
+	protected String playerId = "";
+	protected String sessionId = "";
+	protected long gameId = 1;
+	protected String gameType = "";
 	protected long time;
+	protected long timeSinceLastMove;
 	
 /** Array containing all card stacks used in the game */
     protected CardStack[] stacks;
@@ -96,47 +104,83 @@ public abstract class Solitaire extends Applet
     protected int gamesPlayed = 0, gamesWon = 0; 
 
 /** Writes elapsed time & message in status bar */ 
-    protected StatusBar statusBar;
+    public StatusBar statusBar;
     
 /** Do general initialization and call game-specific initialization function*/
     public void init()
     {
-    		setBackground(new Color(0, 0xCC, 0));
-        	setLayout(null); 
-        	moveLog    = new Stack();
-        	undoLog    = new Stack();
-        	restart    = makeButton("Restart");
-        	newGame    = makeButton("New Game");
-        	undo       = makeButton("Undo");
-        	redo       = makeButton("Redo"); 
-        	help       = makeButton("Help"); 
-        	options    = makeButton("Options"); 
-        	Button[] btns = { newGame, restart, options, undo, help };
-        	buttons     = btns;
-        	buttonPanel = makeButtonPanel(buttons, new GridLayout(5, 1, 0, 0),
-                                      bpWidth, Card.HEIGHT);
-        	Panel undoRedo = new Panel();
-        	undoRedo.setLayout(new GridLayout(1, 2, 0, 0));
-        	undoRedo.add(undo);
-        	undoRedo.add(redo);
-        	buttonPanel.add(undoRedo, 2); 
-        
-        	String[] rankNames = {"None", "A", "2", "3", "4", "5"};
-        	for(int i = 0; i < rankNames.length; ++i)
-            	startRankChoice.addItem(rankNames[i]);
+    	// Try to get the machine ID
+    	try
+    	{
+    		byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
 
-        	statusBar          = new StatusBar(getAppletContext()); 
-        	Thread timerThread = new Thread(statusBar);
-        	timerThread.start(); 
+        	for (int k = 0; k < mac.length; k++) 
+        	{
+        		machineId += String.format("%02X%s", mac[k], (k < mac.length - 1) ? "-" : "");
+        	    //System.out.format("%02X%s", mac[k], (k < mac.length - 1) ? "-" : "");
+        	}
+      	}
+    	catch (Exception e)
+    	{
+    		machineId = "anon";
+    	}
+    	// Get the player ID
+    	while (playerId.equals(""))
+    	{
+    		String playerName = JOptionPane.showInputDialog("Please input player name, without {}<>;().");
+    		// Remove common programming characters for sanitization
+    		playerName = playerName.replace(";", "");
+    		playerName = playerName.replace("<", "");
+    		playerName = playerName.replace(">", "");
+    		playerName = playerName.replace("(", "");
+    		playerName = playerName.replace(")", "");
+    		playerName = playerName.replace("{", "");
+    		playerName = playerName.replace("}", "");
+    		if (!playerName.equals(""))
+    		{
+    			playerId = playerName;
+    			logFile = playerName + "_" + System.currentTimeMillis() + "_" + "freecell.txt";
+    		}
+    	}
+    	setBackground(new Color(0, 0xCC, 0));
+    	setLayout(null); 
+    	moveLog    = new Stack();
+    	undoLog    = new Stack();
+    	restart    = makeButton("Restart");
+    	newGame    = makeButton("New Game");
+    	undo       = makeButton("Undo");
+    	redo       = makeButton("Redo"); 
+    	help       = makeButton("Help"); 
+    	options    = makeButton("Options"); 
+    	Button[] btns = { newGame, restart, options, undo, help };
+    	buttons     = btns;
+    	buttonPanel = makeButtonPanel(buttons, new GridLayout(5, 1, 0, 0), bpWidth, Card.HEIGHT);
+    	Panel undoRedo = new Panel();
+    	undoRedo.setLayout(new GridLayout(1, 2, 0, 0));
+    	undoRedo.add(undo);
+    	undoRedo.add(redo);
+    	buttonPanel.add(undoRedo, 2); 
         
-        	gameInit(); 
-        	makeScreen(); 
-        	deck       = new int[DECK_SIZE * NDECKS];
-        	optsDlg    = new OptsDlg(this);
-        	resetOptions();
-        	time = System.currentTimeMillis();
-        	startGame(true);
+    	String[] rankNames = {"None", "A", "2", "3", "4", "5"};
+    	for(int i = 0; i < rankNames.length; ++i)
+    		startRankChoice.addItem(rankNames[i]);
+
+    	time = System.currentTimeMillis();
+    	timeSinceLastMove = System.currentTimeMillis();
+    	sessionId = Long.toString(time);
+    	statusBar          = new StatusBar(getAppletContext(), servletPath, machineId, playerId, sessionId, gameType, gameId); 
+    	Thread timerThread = new Thread(statusBar);
+    	timerThread.start(); 
+        
+    	gameInit(); 
+    	statusBar.updateLogFile(machineId, playerId, sessionId, gameType, gameId);
+    	makeScreen(); 
+    	deck       = new int[DECK_SIZE * NDECKS];
+    	optsDlg    = new OptsDlg(this);
+    	resetOptions();
+    	startGame(true);
     }
+    
     public void stop() { statusBar.stopTimer(); }
     public void destroy() { statusBar.stopTimer(); }
     
@@ -408,12 +452,25 @@ public abstract class Solitaire extends Applet
  *    be subclassed, with the new function calling super.action */
     public boolean action(Event evt, Object arg)
     {
+    	long currTime = System.currentTimeMillis();
+    	long delay = currTime - time;
+    	time = currTime;
         Object source = evt.target;
         if(source == restart)
+        {
+        	logMessage("Game Restart,-1,-1," + delay);
+        	this.gameId++;
+        	statusBar.updateLogFile(machineId, playerId, sessionId, gameType, gameId);
             startGame(false);
+        }
             
         else if(source == newGame)
+        {
+        	logMessage("New Game,-1,-1," + delay);
+        	this.gameId++;
+        	statusBar.updateLogFile(machineId, playerId, sessionId, gameType, gameId);
             startGame(true);
+        }
         
         else if(source == undo)
         {   undo(moveLog, undoLog, undo);
@@ -537,6 +594,16 @@ public abstract class Solitaire extends Applet
         }
         return false;
     }
+    
+    /**
+     * Event to handle mouse movement so that it can be placed into the log file.
+     */
+    
+    public boolean mouseMove(Event evt, int x, int y)
+    {
+    	statusBar.updatePositionInfo(System.currentTimeMillis(), x, y);
+    	return true;
+    }
 
 /** Handle mouse clicks. First see if click occurs inside a card stack. 
  *   If it does and no stack has been selected, select the stack. If a 
@@ -550,7 +617,12 @@ public abstract class Solitaire extends Applet
     {
         showMsg("");
         int i = 0; 
-
+        
+        /*long currTime = System.currentTimeMillis();
+    	long delay = currTime - time;
+    	time = currTime;
+    	logMessage("Location Clicked," + x + "," + y + "," + delay);*/
+       
         Component c = this.locate(x, y);
         CardStack clicked;
 
@@ -600,8 +672,26 @@ public abstract class Solitaire extends Applet
             {   
             	if(clicked != selected)
             	{
+            		int srcStack = -1;
+                	int destStack = -1;
+                	
+                	for (int j = 0; i < stacks.length; j++)
+                	{
+                		if (clicked.equals(stacks[j]))
+                		{
+                			srcStack = j;
+                		}
+                		else if (selected.equals(stacks[j]))
+                		{
+                			destStack = j;
+                		}
+                	}
                     showMsg("Invalid move");
-                    logMessage("Invalid move");
+                    long currTime = System.currentTimeMillis();
+                	long delay = currTime - time;
+                	time = currTime;
+                	logMessage("Location Clicked," + x + "," + y + "," + delay);
+                    logMessage("Invalid move," + srcStack + "," + destStack + "," + delay);
             	}
             }
             else
@@ -762,7 +852,7 @@ public abstract class Solitaire extends Applet
     	long delay = currTime - time;
     	time = currTime;
     	// Determine stack numbers to ensure that the move is logged
-    	String moveMsg = "";
+    	String moveMsg = "Card Move,";
     	int srcStack = -1;
     	int destStack = -1;
     	
@@ -814,13 +904,21 @@ public abstract class Solitaire extends Applet
         statusBar.updateStats(statistics());
 
         if(gameWon())
-        {   showMsg("Victory!");
-        	logMessage("-1,-1,-1,Win");
+        {   
+        	currTime = System.currentTimeMillis();
+        	delay = currTime - time;
+        	time = currTime;
+        	showMsg("Victory!");
+        	logMessage("Game Win,-1,-1");
             statusBar.stopTimer();
         }
         else if(gameLost())
-        {   showMsg("Game Over. No more possible moves");
-        	logMessage("-1,-1,-1,Loss");
+        {   
+        	currTime = System.currentTimeMillis();
+        	delay = currTime - time;
+        	time = currTime;
+        	showMsg("Game Over. No more possible moves");
+        	logMessage("Game Loss,-1,-1");
             statusBar.stopTimer();
         }
     }
@@ -1035,6 +1133,7 @@ public abstract class Solitaire extends Applet
     // Sends the message to the log file created by the game, silently capturing any errors that come back.
     protected void logMessage(String msg) 
     {
+    	logFile = machineId + "_" + playerId + "_" + sessionId + "_" + gameType + "_" + gameId + ".txt";
     	String eol = System.getProperty("line.separator");
     	
     	try
@@ -1105,18 +1204,46 @@ class CardMove
  *  game statistics in the bar at the bottom of the browser */
 class StatusBar implements Runnable 
 {
+	// The amount of time with no mouse movement before recording that fact.
+	public static final int recordTime = 200;
+	
     long startTime = System.currentTimeMillis();
+    // Stuff for recording mouse position
+    long timeSinceLastMove = startTime;
+    int currX = 0;
+    int currY = 0;
+    
+    String servletPath;
+    String logFile;
+    
     int nSec = 0, next_update;
     int nAutoMoves;
     String message = "", stats = "";
     java.applet.AppletContext apCont;
     boolean visible = true, running = true;
     
-    StatusBar(java.applet.AppletContext ac) 
+    StatusBar(java.applet.AppletContext ac, String servletPath, String machineId, 
+    		  String playerId, String sessionId, String gameType, long gameId) 
     {
-        apCont = ac; 
+        apCont = ac;
+        this.servletPath = servletPath;
+        this.logFile = machineId + "_" + playerId + "_" + sessionId + "_" + gameType + "_" + gameId + ".txt";
         resetTimer();
     }
+    
+    void updateLogFile(String machineId, String playerId, String sessionId, String gameType, long gameId)
+    {
+    	this.logFile = machineId + "_" + playerId + "_" + sessionId + "_" + gameType + "_" + gameId + ".txt";
+    }
+    
+    /** Set the time since the last move to allow */
+    void updatePositionInfo(long newTime, int x, int y)
+    {
+    	timeSinceLastMove = newTime;
+    	currX = x;
+    	currY = y;
+    }
+    
 /** Change the message, then write it and the current time to the status bar */
     void showMsg(String msg)
     {
@@ -1154,11 +1281,20 @@ class StatusBar implements Runnable
     public void run() 
     {   
         for( ; ; )
-        {   long elapsed = System.currentTimeMillis() - startTime;
+        {   
+        	long elapsed = System.currentTimeMillis() - startTime;
+        	long elapsedSinceLastMove = System.currentTimeMillis() - timeSinceLastMove;
+        	if (elapsedSinceLastMove >= recordTime)
+        	{
+        		timeSinceLastMove = System.currentTimeMillis();
+        		logMessage("No Mouse Movement," + currX + "," + currY + "," + elapsedSinceLastMove);
+        	}
             long sleepMSec = (nSec + 1) * 1000 - elapsed;
             try
-            {   Thread.sleep(Math.max(sleepMSec, 0));
-            } catch (InterruptedException e) {  }
+            {   
+            	Thread.sleep(Math.max(sleepMSec, 0));
+            } 
+            catch (InterruptedException e) {  }
             ++nSec;
 
             if(running)
@@ -1169,6 +1305,9 @@ class StatusBar implements Runnable
     {
         nSec = 0; 
         startTime = System.currentTimeMillis();
+        timeSinceLastMove = startTime;
+        currX = 0;
+        currY = 0;
         running   = visible;
     }
     public void displayTimer(boolean vis)
@@ -1179,6 +1318,36 @@ class StatusBar implements Runnable
         }
     }
     public void stopTimer() { running = false; }
+    
+    protected void logMessage(String msg) 
+    {
+    	String eol = System.getProperty("line.separator");
+    	
+    	try
+        {
+    		String stringToReverse = URLEncoder.encode(this.logFile + ";" + msg + eol, "UTF-8");
+         	
+         	URL url = new URL(servletPath);
+         	URLConnection connection = url.openConnection();
+         	connection.setDoOutput(true);
+
+         	OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
+         	out.write("string=" + stringToReverse);
+         	out.close();
+
+         	BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+         	String decodedString;
+         	while ((decodedString = in.readLine()) != null) 
+         	{
+         		System.out.println(decodedString);
+         	}
+         	in.close();
+         }
+         catch (Exception e)
+         {
+         	e.printStackTrace();
+         }
+    }
 }
 
 
