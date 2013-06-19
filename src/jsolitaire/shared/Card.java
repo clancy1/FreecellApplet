@@ -34,6 +34,12 @@ public class Card
     public static final int QUEEN = 11; 
 /** Rank of king */ 
     public static final int KING = 12;
+/** Defines for the suits, to make unwinding easier */
+    public static final int SPADE = 0;
+    public static final int CLUBS = 1;
+    public static final int HEARTS = 2;
+    public static final int DIAMONDS = 3;
+    
 /** Circumference of round corners of card */ 
     public static int CIRC = 16; // circumference of round corners 
 /** Radius of round corners of cards */ 
