@@ -42,7 +42,7 @@ public class Unwinder
 				{
 					stacks.add(line);
 				}
-				else if (line.contains("Card Move"))
+				if (line.contains(Solitaire.CARD_MOVE) && !line.contains("Invalid"))
 				{
 					cardMoves.add(line);
 				}
@@ -118,10 +118,10 @@ public class Unwinder
 					
 					game[j].add(new Card(rankNum, suitNum));
 				}
-				System.out.println();
 			}
 			
 			// Apply the moves
+			System.out.println(cardMoves.size());
 			for (String move : cardMoves)
 			{
 				String[] fields = move.split(",");

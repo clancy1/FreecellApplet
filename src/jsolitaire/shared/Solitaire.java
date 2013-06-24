@@ -33,7 +33,15 @@ public abstract class Solitaire extends Applet
 	protected long gameId = 1;
 	protected String gameType = "";
 	protected long time;
-	protected long timeSinceLastMove;
+	
+	// Definitions for log labels
+	public static final String START_TIME = "StartTime";
+	public static final String CARD_MOVE = "CardMove";
+	public static final String MOUSE_MOVE = "MouseMove";
+	public static final String MOUSE_DOWN = "MouseDown";
+	public static final String MOUSE_UP = "MouseUp";
+	public static final String NEW_GAME = "NewGame";
+	public static final String GAME_RESTART = "GameRestart";
 	
 /** Array containing all card stacks used in the game */
     protected CardStack[] stacks;
@@ -166,14 +174,13 @@ public abstract class Solitaire extends Applet
     		startRankChoice.addItem(rankNames[i]);
 
     	time = System.currentTimeMillis();
-    	timeSinceLastMove = System.currentTimeMillis();
     	sessionId = Long.toString(time);
-    	statusBar          = new StatusBar(getAppletContext(), servletPath, machineId, playerId, sessionId, gameType, gameId); 
+    	statusBar          = new StatusBar(getAppletContext()); 
     	Thread timerThread = new Thread(statusBar);
     	timerThread.start(); 
-        
+    	
     	gameInit(); 
-    	statusBar.updateLogFile(machineId, playerId, sessionId, gameType, gameId);
+    	logMessage(START_TIME + "," + System.currentTimeMillis());
     	makeScreen(); 
     	deck       = new int[DECK_SIZE * NDECKS];
     	optsDlg    = new OptsDlg(this);
@@ -452,36 +459,46 @@ public abstract class Solitaire extends Applet
  *    be subclassed, with the new function calling super.action */
     public boolean action(Event evt, Object arg)
     {
-    	long currTime = System.currentTimeMillis();
-    	long delay = currTime - time;
-    	time = currTime;
         Object source = evt.target;
+        
         if(source == restart)
         {
-        	logMessage("Game Restart,-1,-1," + delay);
+        	logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + restart.getLabel());
+        	logMessage(MOUSE_UP + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis());
+        	logMessage(GAME_RESTART + "," + System.currentTimeMillis());
         	this.gameId++;
-        	statusBar.updateLogFile(machineId, playerId, sessionId, gameType, gameId);
             startGame(false);
         }
             
         else if(source == newGame)
         {
-        	logMessage("New Game,-1,-1," + delay);
+        	logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + newGame.getLabel());
+        	logMessage(MOUSE_UP + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis());
+        	logMessage(NEW_GAME + "," + System.currentTimeMillis());
         	this.gameId++;
-        	statusBar.updateLogFile(machineId, playerId, sessionId, gameType, gameId);
             startGame(true);
         }
         
         else if(source == undo)
-        {   undo(moveLog, undoLog, undo);
+        {   
+        	logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + undo.getLabel());
+        	undo(moveLog, undoLog, undo);
+        	logMessage(MOUSE_UP + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis());
             redo.enable();
         }
         else if(source == redo)
+        {
+        	logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + redo.getLabel());
             undo(undoLog, null, redo);
+            logMessage(MOUSE_UP + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis());
+        }
 
      // Put options window in center of screen  
         else if(source == options)
-        {   if(!optsDlg.isVisible())
+        {   
+        	logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + options.getLabel());
+        	logMessage(MOUSE_UP + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis());
+        	if(!optsDlg.isVisible())
             {   Dimension d1 = Toolkit.getDefaultToolkit().getScreenSize();
                 Dimension d2 = optsDlg.size();
                 optsDlg.move((d1.width - d2.width) / 2, 
@@ -494,10 +511,13 @@ public abstract class Solitaire extends Applet
             }
         }
         else if(source == help)
+        {
+        	logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + help.getLabel());
+        	logMessage(MOUSE_UP + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis());
             showURL(helpFile);
+        }
         else
             return false;
-        
         return true;
     }
  /** Display a new browser window contain a document. This function is
@@ -601,7 +621,7 @@ public abstract class Solitaire extends Applet
     
     public boolean mouseMove(Event evt, int x, int y)
     {
-    	statusBar.updatePositionInfo(System.currentTimeMillis(), x, y);
+    	logMessage(MOUSE_MOVE + "," + x + "," + y + "," + System.currentTimeMillis());
     	return true;
     }
 
@@ -616,14 +636,11 @@ public abstract class Solitaire extends Applet
     public boolean mouseDown(Event evt, int x, int y)
     {
         showMsg("");
-        int i = 0; 
         
-        /*long currTime = System.currentTimeMillis();
-    	long delay = currTime - time;
-    	time = currTime;
-    	logMessage("Location Clicked," + x + "," + y + "," + delay);*/
+        int i = 0; 
        
         Component c = this.locate(x, y);
+        logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + c.getName());
         CardStack clicked;
 
         if(c == null || !(c instanceof CardStack) || !((CardStack)c).inCards(x, y))
@@ -690,8 +707,8 @@ public abstract class Solitaire extends Applet
             		long currTime = System.currentTimeMillis();
             		long delay = currTime - time;
             		time = currTime;
-            		logMessage("Location Clicked," + x + "," + y + "," + delay);
-            		logMessage("Invalid Move," + srcStack + "," + destStack + "," + delay);
+            		logMessage("Location Clicked," + x + "," + y + "," + System.currentTimeMillis());
+            		logMessage(CARD_MOVE + "," + srcStack + "," + destStack + "," + System.currentTimeMillis() + ",Invalid");
             	}
             }
             else
@@ -700,6 +717,12 @@ public abstract class Solitaire extends Applet
             deselect(); 
         }
         return true;
+    }
+    
+    public boolean mouseUp(Event evt, int x, int y)
+    {
+    	logMessage(MOUSE_UP + "," + x + "," + y + "," + System.currentTimeMillis());
+    	return true;
     }
 
 /** Move card from selected stack to clicked stack, then make possible
@@ -847,12 +870,8 @@ public abstract class Solitaire extends Applet
     public void moveCard(CardStack dest, CardStack src, int nMove, 
                          int insI, int delI, Button btn)
     {
-    	// Calculate delay in between moves
-    	long currTime = System.currentTimeMillis();
-    	long delay = currTime - time;
-    	time = currTime;
     	// Determine stack numbers to ensure that the move is logged
-    	String moveMsg = "Card Move,";
+    	String moveMsg = CARD_MOVE + ",";
     	int srcStack = -1;
     	int destStack = -1;
     	
@@ -868,7 +887,7 @@ public abstract class Solitaire extends Applet
     		}
     	}
     	
-    	moveMsg += srcStack + "," + destStack + "," + delay;
+    	moveMsg += srcStack + "," + destStack + "," + System.currentTimeMillis();
     	
     	// Record if a move is an undo or a redo in the game log
     	if (btn == undo)
@@ -905,20 +924,14 @@ public abstract class Solitaire extends Applet
 
         if(gameWon())
         {   
-        	currTime = System.currentTimeMillis();
-        	delay = currTime - time;
-        	time = currTime;
         	showMsg("Victory!");
-        	logMessage("Game Win,-1,-1");
+        	logMessage("GameWin," + System.currentTimeMillis());
             statusBar.stopTimer();
         }
         else if(gameLost())
-        {   
-        	currTime = System.currentTimeMillis();
-        	delay = currTime - time;
-        	time = currTime;
+        {  
         	showMsg("Game Over. No more possible moves");
-        	logMessage("Game Loss,-1,-1");
+        	logMessage("GameLoss," + System.currentTimeMillis());
             statusBar.stopTimer();
         }
     }
@@ -1204,46 +1217,18 @@ class CardMove
  *  game statistics in the bar at the bottom of the browser */
 class StatusBar implements Runnable 
 {
-	// The amount of time with no mouse movement before recording that fact.
-	public static final int recordTime = 200;
-	
     long startTime = System.currentTimeMillis();
-    // Stuff for recording mouse position
-    long timeSinceLastMove = startTime;
-    int currX = 0;
-    int currY = 0;
-    
-    String servletPath;
-    String logFile;
-    
     int nSec = 0, next_update;
     int nAutoMoves;
     String message = "", stats = "";
     java.applet.AppletContext apCont;
     boolean visible = true, running = true;
     
-    StatusBar(java.applet.AppletContext ac, String servletPath, String machineId, 
-    		  String playerId, String sessionId, String gameType, long gameId) 
+    StatusBar(java.applet.AppletContext ac) 
     {
-        apCont = ac;
-        this.servletPath = servletPath;
-        this.logFile = machineId + "_" + playerId + "_" + sessionId + "_" + gameType + "_" + gameId + ".txt";
+        apCont = ac; 
         resetTimer();
     }
-    
-    void updateLogFile(String machineId, String playerId, String sessionId, String gameType, long gameId)
-    {
-    	this.logFile = machineId + "_" + playerId + "_" + sessionId + "_" + gameType + "_" + gameId + ".txt";
-    }
-    
-    /** Set the time since the last move to allow */
-    void updatePositionInfo(long newTime, int x, int y)
-    {
-    	timeSinceLastMove = newTime;
-    	currX = x;
-    	currY = y;
-    }
-    
 /** Change the message, then write it and the current time to the status bar */
     void showMsg(String msg)
     {
@@ -1281,20 +1266,11 @@ class StatusBar implements Runnable
     public void run() 
     {   
         for( ; ; )
-        {   
-        	long elapsed = System.currentTimeMillis() - startTime;
-        	long elapsedSinceLastMove = System.currentTimeMillis() - timeSinceLastMove;
-        	if (elapsedSinceLastMove >= recordTime)
-        	{
-        		timeSinceLastMove = System.currentTimeMillis();
-        		logMessage("No Mouse Movement," + currX + "," + currY + "," + elapsedSinceLastMove);
-        	}
+        {   long elapsed = System.currentTimeMillis() - startTime;
             long sleepMSec = (nSec + 1) * 1000 - elapsed;
             try
-            {   
-            	Thread.sleep(Math.max(sleepMSec, 0));
-            } 
-            catch (InterruptedException e) {  }
+            {   Thread.sleep(Math.max(sleepMSec, 0));
+            } catch (InterruptedException e) {  }
             ++nSec;
 
             if(running)
@@ -1305,9 +1281,6 @@ class StatusBar implements Runnable
     {
         nSec = 0; 
         startTime = System.currentTimeMillis();
-        timeSinceLastMove = startTime;
-        currX = 0;
-        currY = 0;
         running   = visible;
     }
     public void displayTimer(boolean vis)
@@ -1318,36 +1291,6 @@ class StatusBar implements Runnable
         }
     }
     public void stopTimer() { running = false; }
-    
-    protected void logMessage(String msg) 
-    {
-    	String eol = System.getProperty("line.separator");
-    	
-    	try
-        {
-    		String stringToReverse = URLEncoder.encode(this.logFile + ";" + msg + eol, "UTF-8");
-         	
-         	URL url = new URL(servletPath);
-         	URLConnection connection = url.openConnection();
-         	connection.setDoOutput(true);
-
-         	OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
-         	out.write("string=" + stringToReverse);
-         	out.close();
-
-         	BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-         	String decodedString;
-         	while ((decodedString = in.readLine()) != null) 
-         	{
-         		System.out.println(decodedString);
-         	}
-         	in.close();
-         }
-         catch (Exception e)
-         {
-         	e.printStackTrace();
-         }
-    }
 }
 
 
