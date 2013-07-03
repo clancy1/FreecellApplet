@@ -27,6 +27,10 @@ public class FreeCell extends Solitaire
     int nFreeCells = 4, MAX_FREE_CELLS = 8;
     final int BUILDS_I = 12;
     Choice nfcChoice = new Choice();
+    
+    public static final String FREECELL = "Freecell";
+    public static final String HOMECELL = "Homecell";
+    public static final String CASCADE = "Cascade";
 
 /** gameInit initializes the stacks array in the following manner: <BR> 
  *  <TABLE> 
@@ -56,6 +60,46 @@ public class FreeCell extends Solitaire
         {
         	stacks[stackI] = new FreeCellBuild();
         }
+    }
+    
+    /**
+     * Overwritten printStack in order to include notation of a freecell and what not
+     */
+    
+    protected String printStack(int index, CardStack stack)
+    {
+    	String stackContents = "";
+    	if (index < MAX_FREE_CELLS)
+    	{
+    		stackContents += FREECELL + LOG_SEPARATOR;
+    	}
+    	else if (index >= MAX_FREE_CELLS && index < MAX_FREE_CELLS + 4)
+    	{
+    		stackContents += HOMECELL + LOG_SEPARATOR;
+    	}
+    	else
+    	{
+    		stackContents += CASCADE + LOG_SEPARATOR;
+    	}
+    	stackContents += index + LOG_SEPARATOR;
+    	
+    	if (stack.nCards() == 0)
+    	{
+    		stackContents += "-";
+    		return stackContents;
+    	}
+    	else
+    	{
+    		for (int i = 0; i < stack.nCards(); i++)
+    		{
+    			stackContents += stack.cardAt(i);
+    			if (i < stack.nCards() - 1)
+    			{
+    				stackContents += LOG_SEPARATOR;
+    			}
+    		}
+    		return stackContents;
+    	}
     }
 
 /** layoutScreen arranges the display in two rows. The first row has

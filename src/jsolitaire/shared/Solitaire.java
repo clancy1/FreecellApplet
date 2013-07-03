@@ -42,7 +42,8 @@ public abstract class Solitaire extends Applet
 	public static final String MOUSE_UP = "MouseUp";
 	public static final String NEW_GAME = "NewGame";
 	public static final String GAME_RESTART = "GameRestart";
-	
+	public static final String STACK = "CardStack";
+	public static final String LOG_SEPARATOR = " ";
 /** Array containing all card stacks used in the game */
     protected CardStack[] stacks;
 /** Reference to currently selected stack, null if no selection */ 
@@ -180,7 +181,7 @@ public abstract class Solitaire extends Applet
     	timerThread.start(); 
     	
     	gameInit(); 
-    	logMessage(START_TIME + "," + System.currentTimeMillis());
+    	logMessage(START_TIME + LOG_SEPARATOR + System.currentTimeMillis());
     	makeScreen(); 
     	deck       = new int[DECK_SIZE * NDECKS];
     	optsDlg    = new OptsDlg(this);
@@ -421,7 +422,7 @@ public abstract class Solitaire extends Applet
         	for(int suitI = 0; suitI < 4; ++suitI)
         	{
                 stacks[SUITS_I + suitI].add(deck, deckI + suitI, 1);
-                gameState += (SUITS_I + suitI) + " " + stacks[SUITS_I + suitI].toString() + eol;
+                gameState += printStack(SUITS_I + suitI, stacks[SUITS_I + suitI]) + eol;
         	}
         }
             
@@ -429,13 +430,36 @@ public abstract class Solitaire extends Applet
         for(int stackI = 0; stackI < stacks.length; ++stackI)
         {   CardStack stk = stacks[stackI];
             stk.add(deck, deckI, nsCards[stackI]);
-            gameState += stackI + " " + stk.toString() + eol;
+            gameState += printStack(stackI, stk) + eol;
             if(nsTurned != null)
                 stk.setNTurned(nsTurned[stackI]);
             stk.repaint();
             deckI += nsCards[stackI];
         }
         logMessage(gameState);
+    }
+    
+    protected String printStack(int index, CardStack stack)
+    {
+    	String stackContents = STACK + LOG_SEPARATOR + index + LOG_SEPARATOR;
+    	Card[] contents = stack.cards;
+    	if (stack.cards.length == 0)
+    	{
+    		stackContents += "-";
+    		return stackContents;
+    	}
+    	else
+    	{
+    		for (int i = 0; i < contents.length; i++)
+    		{
+    			stackContents += contents[i].toString();
+    			if (i < contents.length - 1)
+    			{
+    				stackContents += LOG_SEPARATOR;
+    			}
+    		}
+    		return stackContents;
+    	}
     }
     
 /** Clear all the stacks, deselect their cards and restore the desired
@@ -463,41 +487,41 @@ public abstract class Solitaire extends Applet
         
         if(source == restart)
         {
-        	logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + restart.getLabel());
-        	logMessage(MOUSE_UP + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis());
-        	logMessage(GAME_RESTART + "," + System.currentTimeMillis());
+        	logMessage(MOUSE_DOWN + LOG_SEPARATOR + System.currentTimeMillis() +LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y + LOG_SEPARATOR + restart.getLabel());
+        	logMessage(MOUSE_UP + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y);
+        	logMessage(GAME_RESTART + LOG_SEPARATOR + System.currentTimeMillis());
         	this.gameId++;
             startGame(false);
         }
             
         else if(source == newGame)
         {
-        	logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + newGame.getLabel());
-        	logMessage(MOUSE_UP + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis());
-        	logMessage(NEW_GAME + "," + System.currentTimeMillis());
+        	logMessage(MOUSE_DOWN + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y + LOG_SEPARATOR + newGame.getLabel());
+        	logMessage(MOUSE_UP + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y);
+        	logMessage(NEW_GAME + LOG_SEPARATOR + System.currentTimeMillis());
         	this.gameId++;
             startGame(true);
         }
         
         else if(source == undo)
         {   
-        	logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + undo.getLabel());
+        	logMessage(MOUSE_DOWN + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y + LOG_SEPARATOR + undo.getLabel());
         	undo(moveLog, undoLog, undo);
-        	logMessage(MOUSE_UP + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis());
+        	logMessage(MOUSE_UP + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y);
             redo.enable();
         }
         else if(source == redo)
         {
-        	logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + redo.getLabel());
+        	logMessage(MOUSE_DOWN + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y + LOG_SEPARATOR + redo.getLabel());
             undo(undoLog, null, redo);
-            logMessage(MOUSE_UP + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis());
+            logMessage(MOUSE_UP + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y);
         }
 
      // Put options window in center of screen  
         else if(source == options)
         {   
-        	logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + options.getLabel());
-        	logMessage(MOUSE_UP + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis());
+        	logMessage(MOUSE_DOWN + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y + LOG_SEPARATOR + options.getLabel());
+        	logMessage(MOUSE_UP + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y);
         	if(!optsDlg.isVisible())
             {   Dimension d1 = Toolkit.getDefaultToolkit().getScreenSize();
                 Dimension d2 = optsDlg.size();
@@ -512,8 +536,8 @@ public abstract class Solitaire extends Applet
         }
         else if(source == help)
         {
-        	logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + help.getLabel());
-        	logMessage(MOUSE_UP + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis());
+        	logMessage(MOUSE_DOWN + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y + LOG_SEPARATOR + help.getLabel());
+        	logMessage(MOUSE_UP + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y);
             showURL(helpFile);
         }
         else
@@ -621,7 +645,7 @@ public abstract class Solitaire extends Applet
     
     public boolean mouseMove(Event evt, int x, int y)
     {
-    	logMessage(MOUSE_MOVE + "," + x + "," + y + "," + System.currentTimeMillis());
+    	logMessage(MOUSE_MOVE + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + x + LOG_SEPARATOR + y);
     	return true;
     }
 
@@ -640,7 +664,7 @@ public abstract class Solitaire extends Applet
         int i = 0; 
        
         Component c = this.locate(x, y);
-        logMessage(MOUSE_DOWN + "," + evt.x + "," + evt.y + "," + System.currentTimeMillis() + "," + c.getName());
+        logMessage(MOUSE_DOWN + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y + LOG_SEPARATOR + c.getName());
         CardStack clicked;
 
         if(c == null || !(c instanceof CardStack) || !((CardStack)c).inCards(x, y))
@@ -707,8 +731,7 @@ public abstract class Solitaire extends Applet
             		long currTime = System.currentTimeMillis();
             		long delay = currTime - time;
             		time = currTime;
-            		logMessage("Location Clicked," + x + "," + y + "," + System.currentTimeMillis());
-            		logMessage(CARD_MOVE + "," + srcStack + "," + destStack + "," + System.currentTimeMillis() + ",Invalid");
+            		logMessage(CARD_MOVE + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + srcStack + LOG_SEPARATOR + destStack + LOG_SEPARATOR + "Invalid");
             	}
             }
             else
@@ -721,7 +744,7 @@ public abstract class Solitaire extends Applet
     
     public boolean mouseUp(Event evt, int x, int y)
     {
-    	logMessage(MOUSE_UP + "," + x + "," + y + "," + System.currentTimeMillis());
+    	logMessage(MOUSE_UP + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + x + LOG_SEPARATOR + y);
     	return true;
     }
 
@@ -871,7 +894,7 @@ public abstract class Solitaire extends Applet
                          int insI, int delI, Button btn)
     {
     	// Determine stack numbers to ensure that the move is logged
-    	String moveMsg = CARD_MOVE + ",";
+    	String moveMsg = CARD_MOVE + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR;
     	int srcStack = -1;
     	int destStack = -1;
     	
@@ -887,20 +910,20 @@ public abstract class Solitaire extends Applet
     		}
     	}
     	
-    	moveMsg += srcStack + "," + destStack + "," + System.currentTimeMillis();
+    	moveMsg += srcStack + LOG_SEPARATOR + destStack;
     	
     	// Record if a move is an undo or a redo in the game log
     	if (btn == undo)
     	{
-    		moveMsg += ",Undo";
+    		moveMsg += LOG_SEPARATOR + "Undo";
     	}
     	else if (btn == redo)
     	{
-    		moveMsg += ",Redo";
+    		moveMsg += LOG_SEPARATOR + "Redo";
     	}
     	else
     	{
-    		moveMsg += ",Valid";
+    		moveMsg += LOG_SEPARATOR + "Valid";
     	}
     	logMessage(moveMsg);
     	
