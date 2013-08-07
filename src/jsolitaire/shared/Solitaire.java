@@ -7,6 +7,7 @@ import java.net.*;
 import java.io.*;
 import java.util.Random;
 
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
 /** This is the abstract base class for all solitaire games. <BR> 
@@ -26,11 +27,13 @@ public abstract class Solitaire extends Applet
 {
 	// Path of the game logging servlet
 	protected String servletPath = "http://localhost:8080/cyberlearning/GameLogServlet";
+	//protected String servletPath = "http://ai.cs.umbc.edu/cardplaying/";
 	protected String logFile = "";
 	protected String machineId = "";
 	protected String playerId = "";
 	protected String sessionId = "";
 	protected long gameId = 1;
+	protected boolean finished = false;
 	protected String gameType = "";
 	protected long time;
 	
@@ -133,6 +136,14 @@ public abstract class Solitaire extends Applet
     	{
     		machineId = "anon";
     	}
+    	
+    	/* Dialog box to get beginning player options, including:
+    	 * -- The ID of the player
+    	 * -- What level the player thinks he or she is, from a list
+    	*/
+    	
+    	getInitialOptions();
+    	
     	// Get the player ID
     	while (playerId.equals(""))
     	{
@@ -181,7 +192,7 @@ public abstract class Solitaire extends Applet
     	timerThread.start(); 
     	
     	gameInit(); 
-    	logMessage(START_TIME + LOG_SEPARATOR + System.currentTimeMillis());
+    	
     	makeScreen(); 
     	deck       = new int[DECK_SIZE * NDECKS];
     	optsDlg    = new OptsDlg(this);
@@ -189,7 +200,23 @@ public abstract class Solitaire extends Applet
     	startGame(true);
     }
     
-    public void stop() { statusBar.stopTimer(); }
+    protected void getInitialOptions()
+    {
+    	JFrame frame = new JFrame("FreeCell Applet");
+    	frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    	
+    	frame.pack();
+    	frame.setVisible(true);
+    }
+    
+    public void stop() 
+    { 
+    	statusBar.stopTimer();
+    	if (!finished)
+    	{
+    		logMessage("Quit" + LOG_SEPARATOR + System.currentTimeMillis());
+    	}
+    }
     public void destroy() { statusBar.stopTimer(); }
     
 /** Do game-specific initialization. Must initialize stacks array and fill
@@ -377,6 +404,7 @@ public abstract class Solitaire extends Applet
         statusBar.updateStats(statistics());
         nCheats = nRedeals = 0;
         autoMove(); 
+        logMessage(START_TIME + LOG_SEPARATOR + System.currentTimeMillis());
     }
 
 /** Randomize an array of integers 
@@ -491,6 +519,7 @@ public abstract class Solitaire extends Applet
         	logMessage(MOUSE_UP + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y);
         	logMessage(GAME_RESTART + LOG_SEPARATOR + System.currentTimeMillis());
         	this.gameId++;
+        	finished = false;
             startGame(false);
         }
             
@@ -500,6 +529,7 @@ public abstract class Solitaire extends Applet
         	logMessage(MOUSE_UP + LOG_SEPARATOR + System.currentTimeMillis() + LOG_SEPARATOR + evt.x + LOG_SEPARATOR + evt.y);
         	logMessage(NEW_GAME + LOG_SEPARATOR + System.currentTimeMillis());
         	this.gameId++;
+        	finished = false;
             startGame(true);
         }
         
@@ -544,6 +574,7 @@ public abstract class Solitaire extends Applet
             return false;
         return true;
     }
+    
  /** Display a new browser window contain a document. This function is
   *   used to display a game's on-line help 
   *   @param url the document's URL */
@@ -948,12 +979,14 @@ public abstract class Solitaire extends Applet
         if(gameWon())
         {   
         	showMsg("Victory!");
+        	finished = true;
         	logMessage("GameWin," + System.currentTimeMillis());
             statusBar.stopTimer();
         }
         else if(gameLost())
         {  
         	showMsg("Game Over. No more possible moves");
+        	finished = true;
         	logMessage("GameLoss," + System.currentTimeMillis());
             statusBar.stopTimer();
         }
