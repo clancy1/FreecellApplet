@@ -1,58 +1,77 @@
 Current Status:
 
--- The applet can log into a server using Apache Tomcat.  I installed this server on my localhost; these
-   instructions may not work if you do not use Apache Tomcat.
-   
-Information Recorded:
--- Current game state
+-- The applet can be loaded into Eclipse; after that, it should work with the MAPLE server.
+   All log files are written to /usr/share/glassfish3/glassfish/domains/domain1/cardplaying_logs/
+ 
+Log File Format
+ 
+The following lines may appear in the log file:
 
-   For the first X lines, each line lists the current contents of that stack.  
-   The (zero-indexed) lines correspond to:
-   0-7: The freecells.  This game allows for up to 8 freecells, although the default is 4.
-   8-11: The destination card stacks, going from ace to king at the end.
-   12-19: The tableau of the freecell game.
-   
--- Each move
+-- StartTime X
 
-   Each move has its own line with the following format:
-   <source stack index, as listed above>,<destination stack index>,<milliseconds since the previous move>,<notes>.
-   Notes include either "Valid","Undo","Redo".
-   After the last move, one more line is printed depending on whether the player won or lost, with the line being
-   either "-1,-1,-1,Win" or "-1,-1,-1,Loss".
+The starting time of the game; X is equal to the system time of the computer playing the game in milliseconds.
+
+-- Freecell X X1 X2 ...
+
+The contents of Freecell number X.  X1 X2 ... is a space separated list of cards.  Cards are noted as <rank><suite>.  Permitted ranks
+are 2-10, J(ack), Q(ueen), K(ing), and A(ce).  Permitted suites are c(lubs), d(iamonds), h(earts), and s(pades).  If empty, the list is
+replaced with a -.
+
+-- Homecell X X1 X2 ...
+
+Same as Freecell, but describes a homecell, the cell where cards are stacked to end the game.
+
+-- Cascade X X1 X2 ...
+
+Same as Freecell, but describes a cascade, one of the 8 piles of cards outside of the free and homecells.
    
--- Other Features
+-- MouseMove Time X Y
+
+The mouse was moved at time Time (again, milliseconds system time) to window position with coordinates (X, Y).
+
+-- MouseDown Time X Y Object
+-- MouseUp Time X Y
+
+The mouse was either pressed or depressed.  Same as MouseMove, but in the case of MouseDown, Object describes what was clicked.
+Sometimes the value is canvas0, which indicates the window background.
    
-   The game will ask for a player name at the beginning to allow the tracking of a player's progress.
-   The player name is not allowed to have the following characters: {}<>();.
-   The game also stores the path to the servlet as an instance variable in Solitaire, for those who need to change it.
-   Lastly, the log file for the game is <player name>_<system time in milliseconds when the file was created>_freecell.txt.
+-- CardMove Time StackFrom StackTo Valid|Invalid
+
+The player attempted to move a card at time Time from the stack numbered StackFrom to the stack numbered StackTo.  See the numbers
+associated with the game state.  Valid|Invalid indicates whether the move was valid or not.
+   
+-- GameRestart Time
+
+The player restarted the game at time Time.
+
+-- GameWin|GameLose,Time
+
+The player won or lost the game at the indicated time.  Note that the comma should be replaced by a space.
+
+-- NewGame Time
+
+The player started a NewGame at time Time.
+
+Other Features
+   
+The game will ask for a player name at the beginning to allow the tracking of a player's progress.
+The player name is not allowed to have the following characters: {}<>();.
+The game also stores the path to the servlet as an instance variable in Solitaire, for those who need to change it.
+Lastly, the log file for the game is 
+<machine id of computer used>_<player name>_<system time in milliseconds when the file was created>_freecell_<game number within current session>.txt.
 
 In order to run the applet and have it execute code:
 -- Create a new Eclipse project, with the packages jsolitare.freecell 
    and jsolitaire.shared in the src package directory.
 -- Move the code from the appropriate directories in FreecellApplet to 
-   the corresponding packages in Eclipse.  You can also probably import 
-   the directory FreecellApplet as an Eclipse project.
--- Install and start up a server on localhost.
--- Place GameLogServlet.java into the appropriate directory on your server.  
+   the corresponding packages in Eclipse.  Thus, code in the package jsolitaire.freecell
+   should to into the jsolitaire.freecell package.
+-- In Eclipse, run the Freecell.java file and play.
+
+To modify GameLogServlet, change the code file, recompile it, then make a war suitable for
+Glassfish with the .java and the .class files.  On the MAPLE server, empty the
+/usr/share/glassfish3/glassfish/domains/domain1/autodeploy/ directory, and then place your war
+into it.  Note that this war must have a META-INF and WEB-INF directories; the .class files go
+into a class directory in WEB-INF, and web.xml must also be added (provided with GitHub code).
    
-   For me, I used Tomcat on my localhost.  As an example, I installed
-   Tomcat on my C:\Program Files (x86) directory.  Make the directory
-   C:\Program Files (x86)\apache-tomcat-7.0.40\webapps\cyberlearning\WEB-INF\classes.
-   Place GameLogServlet into the classes directory and compile with javac.
-   Place web.xml in the cyberlearning\WEB-INF directory.  If you changed the directory
-   where you put the compiled GameLogServlet, you must edit the web.xml file to use this
-   new location.
-   The server should be ready to go.
-   
--- Start up the server by running startup.bat / .sh in the bin directory of the 
-   tomcat server.
-   
-   IMPORTANT NOTE: If you make changes to GameLogServlet and recompile, you MUST 
-   shutdown the server with shutdown.bat / .sh in the bin directory and restart 
-   before the changes will be applied.
-   
--- In the bin directory, create a directory named cyberlearning_logs.
--- Run the applet by selecting Freecell.java and selecting the Eclipse run button.
-   It should be logging to the server as you play.  Any error messages will be 
-   displayed in the console output for Eclipse.
+If you have additional questions, contact Jonathan Clancy (clancy1@umbc.edu).

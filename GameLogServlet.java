@@ -36,7 +36,7 @@ public class GameLogServlet extends HttpServlet
 			String[] fileAndContents = decodedString.split(";");
 			 
 			// Now, let's try to write this to a file
-			File file = new File("cyberlearning_logs" + File.separator + fileAndContents[0]);
+			File file = new File(".." + File.separator + "cardplaying_logs" + File.separator + fileAndContents[0]);
             boolean isCreated = file.createNewFile() || file.exists();
 			
 			if (isCreated == false)
